@@ -10,7 +10,7 @@ import * as authService from '../services/authService.js';
  * POST /auth/register
  */
 export const register = catchAsync(async (req, res, next) => {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     // Validate required fields
     if (!email || !password) {
@@ -42,11 +42,24 @@ export const register = catchAsync(async (req, res, next) => {
         });
     }
 
+    // Validate role if provided
+    const { ROLES } = await import('../utils/constants/roles.js');
+    const validRoles = Object.values(ROLES);
+    if (role && !validRoles.includes(role)) {
+        return res.status(STATUS.BAD_REQUEST).json({
+            success: false,
+            error: {
+                status: STATUS.BAD_REQUEST,
+                message: `Invalid role. Must be one of: ${validRoles.join(', ')}`
+            }
+        });
+    }
+
     // Check if user already exists
     const existingUser = await authService.findUserByEmail(email);
 
     // Register user
-    const user = await authService.registerUser(email, password);
+    const user = await authService.registerUser(email, password, role);
 
     // Create verification code
     const verificationCode = await authService.createVerificationCode(user.id, 'email_verification');
@@ -59,7 +72,8 @@ export const register = catchAsync(async (req, res, next) => {
         message: MESSAGES.REGISTRATION_SUCCESS,
         data: {
             id: user.id,
-            email: user.email
+            email: user.email,
+            role: user.role
         }
     });
 });

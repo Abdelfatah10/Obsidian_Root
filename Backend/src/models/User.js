@@ -47,6 +47,7 @@ export default class User {
             data: {
                 email: this.email,
                 password: this.password,
+                role: this.role || 'user',
                 provider: 'local',
                 verified: false
             }
