@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import * as userController from '../controllers/user.controller.js';
 import { authenticate, authorize } from '../middleware/authMiddleware.js';
-import { singleFileUpload } from '../middleware/uploadMiddleware.js';
 import { ROLES } from '../utils/constants/roles.js';
 
 const userRoutes = Router();
@@ -12,7 +11,6 @@ userRoutes.get('/profile/:id', userController.getUserProfile);
 // Protected routes (authentication required)
 userRoutes.get('/me', authenticate, userController.getCurrentUserProfile);
 userRoutes.put('/me', authenticate, userController.updateUserProfile);
-userRoutes.post('/avatar', authenticate, singleFileUpload, userController.uploadProfilePhoto);
 
 // Admin routes (admin role required)
 userRoutes.get('/', authenticate, authorize([ROLES.ADMIN]), userController.getAllUsers);

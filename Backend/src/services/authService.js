@@ -31,9 +31,6 @@ export async function verifyGoogleToken(token) {
             user: {
                 email: payload.email,
                 googleId: payload.sub,
-                firstName: payload.given_name,
-                lastName: payload.family_name,
-                photo_url: payload.picture,
             }
         };
     } catch (error) {

@@ -4,21 +4,19 @@ import { prisma } from '../prisma/client.js';
 export default class User {
 
     // Constructor
-    constructor({ id, email, firstName, lastName, photo_url, role, verified, profileCompleted, provider, createdAt, updatedAt }) {
+    constructor({ id, email, password, role, verified, provider, googleId, createdAt, updatedAt }) {
         this.id = id;
         this.email = email;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.photo_url = photo_url;
+        this.password = password;
         this.role = role;
         this.verified = verified;
-        this.profileCompleted = profileCompleted;
         this.provider = provider;
+        this.googleId = googleId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
 
-    
+
     static async findById(id) {
         return await prisma.user.findUnique({
             where: { id },
@@ -50,8 +48,7 @@ export default class User {
                 email: this.email,
                 password: this.password,
                 provider: 'local',
-                verified: false,
-                profileCompleted: false
+                verified: false
             }
         });
         const verificationCode = await prisma.verificationCode.create({
@@ -72,12 +69,8 @@ export default class User {
             data: {
                 email: this.email,
                 googleId: this.googleId,
-                firstName: this.firstName,
-                lastName: this.lastName,
-                photo_url: this.photo_url,
                 provider: 'google',
-                verified: true,
-                profileCompleted: true
+                verified: true
             }
         });
         this.id = createdUser.id;
@@ -123,12 +116,8 @@ export default class User {
             select: {
                 id: true,
                 email: true,
-                firstName: true,
-                lastName: true,
-                photo_url: true,
                 role: true,
                 verified: true,
-                profileCompleted: true,
                 provider: true,
                 createdAt: true,
                 updatedAt: true
@@ -157,11 +146,7 @@ export default class User {
     static async search(searchTerm, skip = 0, take = 10) {
         return await prisma.user.findMany({
             where: {
-                OR: [
-                    { email: { contains: searchTerm, mode: 'insensitive' } },
-                    { firstName: { contains: searchTerm, mode: 'insensitive' } },
-                    { lastName: { contains: searchTerm, mode: 'insensitive' } }
-                ]
+                email: { contains: searchTerm, mode: 'insensitive' }
             },
             skip,
             take,
@@ -239,31 +224,7 @@ export default class User {
         });
     }
 
-    /**
-     * Update user profile completion status
-     * @param {string} id - User ID
-     * @param {boolean} completed - Profile completion status
-     * @returns {Promise<Object>} Updated user
-     */
-    static async updateProfileCompletion(id, completed) {
-        return await prisma.user.update({
-            where: { id },
-            data: { profileCompleted: completed }
-        });
-    }
 
-    /**
-     * Update user photo URL
-     * @param {string} id - User ID
-     * @param {string} photo_url - Photo URL
-     * @returns {Promise<Object>} Updated user
-     */
-    static async updatePhotoUrl(id, photo_url) {
-        return await prisma.user.update({
-            where: { id },
-            data: { photo_url }
-        });
-    }
 
     /**
      * Get user public profile (safe information)
@@ -276,11 +237,9 @@ export default class User {
             select: {
                 id: true,
                 email: true,
-                firstName: true,
-                lastName: true,
-                photo_url: true,
-                profileCompleted: true,
+                role: true,
                 verified: true,
+                provider: true,
                 createdAt: true
             }
         });

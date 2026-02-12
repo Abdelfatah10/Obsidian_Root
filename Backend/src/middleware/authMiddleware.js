@@ -77,3 +77,30 @@ export const authenticate = async (req, res, next) => {
         });
     }
 };
+
+// Authorization Middleware
+export const authorize = (allowedRoles) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(STATUS.UNAUTHORIZED).json({
+                success: false,
+                error: {
+                    status: STATUS.UNAUTHORIZED,
+                    message: 'User not found'
+                }
+            });
+        }
+
+        if (!allowedRoles.includes(req.user.role)) {
+            return res.status(STATUS.FORBIDDEN).json({
+                success: false,
+                error: {
+                    status: 403,
+                    message: 'You do not have permission to access this resource'
+                }
+            });
+        }
+
+        next();
+    };
+};

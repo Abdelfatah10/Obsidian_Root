@@ -59,9 +59,7 @@ export const register = catchAsync(async (req, res, next) => {
         message: MESSAGES.REGISTRATION_SUCCESS,
         data: {
             id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName
+            email: user.email
         }
     });
 });
@@ -100,9 +98,6 @@ export const login = catchAsync(async (req, res, next) => {
         data: {
             id: user.id,
             email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            photo_url: user.photo_url,
             role: user.role,
             verified: user.verified
         },
@@ -160,9 +155,6 @@ export const loginGoogle = catchAsync(async (req, res, next) => {
         data: {
             id: user.id,
             email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            photo_url: user.photo_url,
             role: user.role,
             verified: user.verified,
             isNewUser: !user.googleId
@@ -439,12 +431,9 @@ export const getCurrentUser = catchAsync(async (req, res, next) => {
         data: {
             id: user.id,
             email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            photo_url: user.photo_url,
             role: user.role,
             verified: user.verified,
-            profileCompleted: user.profileCompleted,
+            provider: user.provider,
             createdAt: user.createdAt
         }
     });

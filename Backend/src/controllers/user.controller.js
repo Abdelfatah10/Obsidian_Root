@@ -1,8 +1,6 @@
 import { STATUS } from '../utils/constants/statusCodes.js';
 import { MESSAGES } from '../utils/constants/messages.js';
 import { catchAsync } from '../utils/catchAsync.js';
-import { authenticate, authorize } from '../middleware/authMiddleware.js';
-import { singleFileUpload } from '../middleware/uploadMiddleware.js';
 import User from '../models/User.js';
 import { ROLES } from '../utils/constants/roles.js';
 
@@ -72,7 +70,7 @@ export const getUserProfile = catchAsync(async (req, res, next) => {
  */
 export const updateUserProfile = catchAsync(async (req, res, next) => {
     const userId = req.user?.id;
-    const { firstName, lastName } = req.body;
+    const { email } = req.body;
 
     if (!userId) {
         return res.status(STATUS.UNAUTHORIZED).json({
@@ -86,12 +84,7 @@ export const updateUserProfile = catchAsync(async (req, res, next) => {
 
     // Validate fields
     const updateData = {};
-    if (firstName) updateData.firstName = firstName;
-    if (lastName) updateData.lastName = lastName;
-
-    if (req.fileUrl) {
-        updateData.photo_url = req.fileUrl;
-    }
+    if (email) updateData.email = email;
 
     if (Object.keys(updateData).length === 0) {
         return res.status(STATUS.BAD_REQUEST).json({
@@ -110,49 +103,7 @@ export const updateUserProfile = catchAsync(async (req, res, next) => {
         message: 'Profile updated successfully',
         data: {
             id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            photo_url: user.photo_url
-        }
-    });
-});
-
-/**
- * Upload user profile photo
- * POST /users/avatar
- */
-export const uploadProfilePhoto = catchAsync(async (req, res, next) => {
-    const userId = req.user?.id;
-
-    if (!userId) {
-        return res.status(STATUS.UNAUTHORIZED).json({
-            success: false,
-            error: {
-                status: STATUS.UNAUTHORIZED,
-                message: MESSAGES.UNAUTHORIZED
-            }
-        });
-    }
-
-    if (!req.fileUrl) {
-        return res.status(STATUS.BAD_REQUEST).json({
-            success: false,
-            error: {
-                status: STATUS.BAD_REQUEST,
-                message: 'No file uploaded'
-            }
-        });
-    }
-
-    const user = await User.updatePhotoUrl(userId, req.fileUrl);
-
-    res.status(STATUS.OK).json({
-        success: true,
-        message: 'Profile photo uploaded successfully',
-        data: {
-            id: user.id,
-            photo_url: user.photo_url
+            email: user.email
         }
     });
 });
@@ -304,7 +255,6 @@ export default {
     getCurrentUserProfile,
     getUserProfile,
     updateUserProfile,
-    uploadProfilePhoto,
     getAllUsers,
     searchUsers,
     updateUserRole,
