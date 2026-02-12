@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="popup.css">
+    <title>Phishing Shield</title>
+</head>
+<body>
+    <div id="popup-container">
+        <header class="header">
+            <div class="logo">
+                <span class="shield-icon">🛡️</span>
+                <h1>Phishing Shield</h1>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <!-- Current Site Status -->
+            <section id="site-status" class="status-card">
+                <div class="status-header">
+                    <span class="status-icon" id="status-icon">🔄</span>
+                    <span class="status-text" id="status-text">Analyzing...</span>
+                </div>
+                <div class="status-details">
+                    <div class="url-display" id="current-url">Loading...</div>
+                    <div class="risk-score">
+                        <span>Risk Score:</span>
+                        <div class="score-bar">
+                            <div class="score-fill" id="score-fill"></div>
+                        </div>
+                        <span id="score-value">0</span>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Indicators Section -->
+            <section id="indicators-section" class="indicators-card hidden">
+                <h3>Detected Indicators</h3>
+                <ul id="indicators-list"></ul>
+            </section>
+            
+            <!-- Quick Actions -->
+            <section class="actions-card">
+                <button id="scan-btn" class="action-btn primary">
+                    <span>🔍</span> Scan Page
+                </button>
+                <button id="whitelist-btn" class="action-btn secondary">
+                    <span>✓</span> Trust Site
+                </button>
+                <button id="report-btn" class="action-btn danger">
+                    <span>⚠️</span> Report
+                </button>
+            </section>
+            
+            <!-- Stats Section -->
+            <section class="stats-card">
+                <div class="stat">
+                    <span class="stat-value" id="total-scans">0</span>
+                    <span class="stat-label">Scans Today</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="threats-blocked">0</span>
+                    <span class="stat-label">Threats Blocked</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="whitelist-count">0</span>
+                    <span class="stat-label">Trusted Sites</span>
+                </div>
+            </section>
+            
+            <!-- Toggle Section -->
+            <section class="toggle-card">
+                <div class="toggle-item">
+                    <span>Real-time Protection</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="protection-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="toggle-item">
+                    <span>Notifications</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="notifications-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </section>
+        </main>
+        
+        <footer class="footer">
+            <a href="#" id="history-link">View History</a>
+            <span class="separator">|</span>
+            <a href="#" id="settings-link">Settings</a>
+        </footer>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>

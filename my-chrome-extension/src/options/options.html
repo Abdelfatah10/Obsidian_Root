@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Shield - Settings</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <span class="shield-icon">🛡️</span>
+                <h1>Phishing Shield Settings</h1>
+            </div>
+            <p class="subtitle">Configure your protection preferences</p>
+        </header>
+        
+        <main class="settings-container">
+            <!-- API Settings -->
+            <section class="settings-section">
+                <h2>🔌 API Configuration</h2>
+                <div class="form-group">
+                    <label for="apiUrl">Backend API URL</label>
+                    <input type="url" id="apiUrl" placeholder="http://localhost:3000/api">
+                    <span class="help-text">The URL of your Phishing Shield API server</span>
+                </div>
+                <div class="form-group">
+                    <label for="apiKey">API Key (Optional)</label>
+                    <input type="password" id="apiKey" placeholder="Enter your API key">
+                    <span class="help-text">Required for authenticated API access</span>
+                </div>
+            </section>
+            
+            <!-- Protection Settings -->
+            <section class="settings-section">
+                <h2>🔒 Protection Settings</h2>
+                <div class="toggle-group">
+                    <div class="toggle-item">
+                        <div class="toggle-info">
+                            <label>Real-time Protection</label>
+                            <span class="toggle-description">Automatically scan websites as you browse</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="enableRealTimeProtection">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-item">
+                        <div class="toggle-info">
+                            <label>Show Notifications</label>
+                            <span class="toggle-description">Display alerts when phishing is detected</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="enableNotifications">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-item">
+                        <div class="toggle-info">
+                            <label>Highlight Suspicious Links</label>
+                            <span class="toggle-description">Visually mark suspicious links on pages</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="highlightLinks">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-item">
+                        <div class="toggle-info">
+                            <label>Block Dangerous Sites</label>
+                            <span class="toggle-description">Prevent navigation to known phishing sites</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="blockDangerousSites">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Sensitivity Settings -->
+            <section class="settings-section">
+                <h2>⚙️ Detection Sensitivity</h2>
+                <div class="form-group">
+                    <label for="sensitivityLevel">Sensitivity Level</label>
+                    <select id="sensitivityLevel">
+                        <option value="low">Low - Fewer warnings, may miss some threats</option>
+                        <option value="medium">Medium - Balanced protection (Recommended)</option>
+                        <option value="high">High - More warnings, maximum protection</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="minimumScore">Warning Threshold Score</label>
+                    <input type="range" id="minimumScore" min="20" max="80" value="50">
+                    <div class="range-labels">
+                        <span>More Sensitive</span>
+                        <span id="scoreDisplay">50</span>
+                        <span>Less Sensitive</span>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Whitelist Management -->
+            <section class="settings-section">
+                <h2>✅ Trusted Sites (Whitelist)</h2>
+                <div class="whitelist-container">
+                    <div class="whitelist-input">
+                        <input type="text" id="newWhitelistItem" placeholder="Enter domain (e.g., example.com)">
+                        <button type="button" id="addWhitelistBtn" class="btn-add">Add</button>
+                    </div>
+                    <ul id="whitelistItems" class="whitelist-list"></ul>
+                </div>
+            </section>
+            
+            <!-- History & Data -->
+            <section class="settings-section">
+                <h2>📊 Data Management</h2>
+                <div class="button-group">
+                    <button type="button" id="clearHistory" class="btn-secondary">
+                        🗑️ Clear Scan History
+                    </button>
+                    <button type="button" id="clearCache" class="btn-secondary">
+                        🔄 Clear Cache
+                    </button>
+                    <button type="button" id="exportData" class="btn-secondary">
+                        📥 Export Settings
+                    </button>
+                    <button type="button" id="importData" class="btn-secondary">
+                        📤 Import Settings
+                    </button>
+                </div>
+            </section>
+            
+            <!-- Save Button -->
+            <div class="save-section">
+                <button type="button" id="saveBtn" class="btn-primary">
+                    💾 Save Settings
+                </button>
+                <span id="saveStatus" class="save-status"></span>
+            </div>
+        </main>
+        
+        <footer class="footer">
+            <p>Phishing Shield v1.0.0 | <a href="#" id="resetDefaults">Reset to Defaults</a></p>
+        </footer>
+    </div>
+    
+    <input type="file" id="importFile" accept=".json" style="display: none;">
+    <script src="options.js"></script>
+</body>
+</html>
