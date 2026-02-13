@@ -1,7 +1,7 @@
 // Obsidian Guard – Background Service Worker
 // Real-time phishing detection: every URL is checked automatically.
 
-const DEFAULT_API_URL = 'https://obsidian-production-5918.up.railway.app/api';
+const DEFAULT_API_URL = 'http://localhost:3000/api';
 const CACHE_DURATION  = 30 * 60 * 1000; // 30 min
 const API_TIMEOUT     = 10_000;          // 10 s
 

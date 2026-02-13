@@ -89,14 +89,68 @@ model CompanyEmployee {
     extensionInstalled Boolean @default(false)
     installedAt        DateTime?
     
+    // Extension auth token for activity tracking
+    extensionToken     String?  @unique
+    lastActiveAt       DateTime?
+    
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    entreprise Entreprise @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
-    user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+    entreprise  Entreprise          @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+    user        User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+    activities  EmployeeActivity[]
 
     @@unique([entrepriseId, email]) // Prevent duplicate invites
     @@map("company_employees")
+}
+
+model EmployeeActivity {
+    id              Int      @id @default(autoincrement())
+    employeeId      Int
+    entrepriseId    Int
+    
+    // Activity info
+    type            String   // url_visit, email_opened, phishing_detected, extension_login, site_blocked
+    url             String?
+    detail          String   // Human-readable description
+    
+    // Risk assessment
+    riskLevel       String   @default("safe") // safe, suspicious, phishing
+    riskScore       Int      @default(0)
+    
+    // Extra metadata
+    metadata        Json?    // Any additional data (indicators, analysis results, etc.)
+    
+    createdAt       DateTime @default(now())
+    
+    employee        CompanyEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+    
+    @@index([entrepriseId, createdAt])
+    @@index([employeeId, createdAt])
+    @@index([entrepriseId, riskLevel])
+    @@map("employee_activities")
+}
+
+model CompanyEmail {
+    id              Int      @id @default(autoincrement())
+    entrepriseId    Int
+    
+    // Email content
+    subject         String
+    body            String
+    recipientType   String   @default("all") // all, selected, by_status
+    recipientFilter String?  // JSON: selected employee IDs or status filter
+    
+    // Delivery tracking
+    totalRecipients Int      @default(0)
+    sentCount       Int      @default(0)
+    failedCount     Int      @default(0)
+    
+    sentAt          DateTime @default(now())
+    createdAt       DateTime @default(now())
+    
+    @@index([entrepriseId, sentAt])
+    @@map("company_emails")
 }
 
 model Person {

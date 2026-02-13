@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Default settings
     const defaultSettings = {
-        apiUrl: 'https://obsidian-production-5918.up.railway.app/api',
+        apiUrl: 'http://localhost:3000/api',
         apiKey: '',
         enableRealTimeProtection: true,
         enableNotifications: true,

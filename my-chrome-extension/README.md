@@ -56,7 +56,7 @@ Configure the backend API URL in the extension options:
 
 1. Right-click the extension icon
 2. Select "Options"
-3. Enter your API URL (default: `https://obsidian-production-5918.up.railway.app/api`)
+3. Enter your API URL (default: `http://localhost:3000/api`)
 
 ### Backend Integration
 
