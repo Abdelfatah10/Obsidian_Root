@@ -22,6 +22,8 @@ model User {
 
     // Relation
     verificationCodes VerificationCode[]
+    entreprise        Entreprise?
+    companyEmployees  CompanyEmployee[]
 
     // Timestamps
     createdAt DateTime @default(now())
@@ -44,4 +46,46 @@ model VerificationCode {
 
     @@unique([userId, type]) // NEW: Prevent multiple codes
     @@map("verification_codes")
+}
+
+model Entreprise {
+    id          Int     @id @default(autoincrement())
+    userId      Int     @unique
+    name        String
+    description String?
+    website     String?
+    logoUrl     String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    
+    user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+    employees CompanyEmployee[]
+
+    @@map("entreprises")
+}
+
+model CompanyEmployee {
+    id           Int      @id @default(autoincrement())
+    entrepriseId Int
+    email        String
+    userId       Int?     // Linked when user accepts invitation
+    
+    status       String   @default("pending") // pending, accepted, rejected
+    inviteToken  String   @unique
+    invitedAt    DateTime @default(now())
+    respondedAt  DateTime?
+    
+    // Extension installation tracking
+    extensionInstalled Boolean @default(false)
+    installedAt        DateTime?
+    
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    entreprise Entreprise @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+    user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+    @@unique([entrepriseId, email]) // Prevent duplicate invites
+    @@map("company_employees")
 }

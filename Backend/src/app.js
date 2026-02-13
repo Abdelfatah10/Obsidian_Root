@@ -11,6 +11,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import phishingRoutes from './routes/phishing.routes.js';
+import companyRoutes from './routes/company.routes.js';
 
 
 // Get the current directory path 
@@ -24,7 +25,7 @@ const app = express();
 // Configure CORS (Cross-Origin Resource Sharing) middleware
 app.use(cors({
     origin: [
-        ENV.DOMAIN_URL || 'http://localhost:9000',
+        ENV.DOMAIN_URL || 'http://localhost:8080',
         'http://localhost:3000',
         /^chrome-extension:\/\//  // Allow Chrome extensions
     ],
@@ -49,7 +50,8 @@ app.get('/health', (req, res) => {
 // Mount Routes
 app.use('/api/auth/v1', authRoutes);
 app.use('/api/users/v1', userRoutes);
-app.use('/api/phishing', phishingRoutes);
+app.use('/api/phishing/v1', phishingRoutes);
+app.use('/api/company/v1', companyRoutes);
 
 
 

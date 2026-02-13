@@ -1,24 +1,23 @@
 import validator from 'validator';
+import bcrypt from 'bcryptjs';
 import { STATUS } from '../utils/constants/statusCodes.js';
 import { MESSAGES } from '../utils/constants/messages.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { verifyRefreshToken, generateAccessToken, generateRefreshToken, setAuthCookies, clearAuthCookies } from '../services/jwtService.js';
-import * as authService from '../services/authService.js';
+import User from '../models/User.js';
 
-/**
- * Register Controller
- * POST /auth/register
- */
+
+// Register Controller
 export const register = catchAsync(async (req, res, next) => {
     const { email, password, role } = req.body;
 
     // Validate required fields
-    if (!email || !password) {
+    if (!email || !password || !role) {
         return res.status(STATUS.BAD_REQUEST).json({
             success: false,
             error: {
                 status: STATUS.BAD_REQUEST,
-                message: 'Email and password are required'
+                message: 'Email, password, and role are required'
             }
         });
     }
@@ -56,16 +55,35 @@ export const register = catchAsync(async (req, res, next) => {
     }
 
     // Check if user already exists
-    const existingUser = await authService.findUserByEmail(email);
+    const existingUser = await User.findByEmail(email);
+    if (existingUser) {
+        return res.status(STATUS.CONFLICT).json({
+            success: false,
+            error: {
+                status: STATUS.CONFLICT,
+                message: 'Email is already registered'
+            }
+        });
+    }
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+    // Generate verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Register user
-    const user = await authService.registerUser(email, password, role);
-
-    // Create verification code
-    const verificationCode = await authService.createVerificationCode(user.id, 'email_verification');
+    // Create user
+    const user = await User.create( email, hashedPassword, role, verificationCode);
+    if (!user) {
+        return res.status(STATUS.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            error: {
+                status: STATUS.INTERNAL_SERVER_ERROR,
+                message: 'Failed to create user'
+            }
+        });
+    }
 
     // Send verification email
-    await authService.sendVerificationEmail(user, verificationCode.code);
+    await User.sendVerificationEmail(user, verificationCode);
 
     res.status(STATUS.CREATED).json({
         success: true,
@@ -78,10 +96,7 @@ export const register = catchAsync(async (req, res, next) => {
     });
 });
 
-/**
- * Login Controller
- * POST /auth/login
- */
+// Login Controller
 export const login = catchAsync(async (req, res, next) => {
     const { email, password } = req.body;
 
@@ -91,51 +106,66 @@ export const login = catchAsync(async (req, res, next) => {
             success: false,
             error: {
                 status: STATUS.BAD_REQUEST,
-                message: 'Email and password are required'
+                message: 'Email, password, and role are required'
             }
         });
     }
 
-    // Login user
-    const user = await authService.loginUser(email, password);
+    if (!validator.isEmail(email)) {
+        return res.status(STATUS.BAD_REQUEST).json({
+            success: false,
+            error: {
+                status: STATUS.BAD_REQUEST,
+                message: 'Invalid email format'
+            }
+        });
+    }
+    // Check if user exists
+    const existingUser = await User.findByEmail(email);
+    if (!existingUser) {
+        return res.status(STATUS.UNAUTHORIZED).json({
+            success: false,
+            error: {
+                status: STATUS.UNAUTHORIZED,
+                message: MESSAGES.INVALID_CREDENTIALS
+            }
+        });
+    }
+    // Check if email is verified
+    if (!existingUser.verified) {
+        return res.status(STATUS.UNAUTHORIZED).json({
+            success: false,
+            error: {
+                status: STATUS.UNAUTHORIZED,
+                message: 'Email is not verified. Please check your inbox for the verification code.'
+            }        
+        });
+    }
 
     // Generate tokens
-    const accessToken = generateAccessToken(user.id, user.email, user.role);
-    const refreshToken = generateRefreshToken(user.id, user.email, user.role);
+    const accessToken = generateAccessToken(existingUser.id, existingUser.email, existingUser.role);
+    const refreshToken = generateRefreshToken(existingUser.id, existingUser.email, existingUser.role);
 
     // Set cookies
     setAuthCookies(res, accessToken, refreshToken);
 
     res.status(STATUS.OK).json({
         success: true,
-        message: MESSAGES.LOGIN_SUCCESS,
-        data: {
-            id: user.id,
-            email: user.email,
-            role: user.role,
-            verified: user.verified
-        },
-        tokens: {
-            accessToken,
-            refreshToken
-        }
+        message: MESSAGES.LOGIN_SUCCESS
     });
 });
 
-/**
- * Google Login Controller
- * POST /auth/login-google
- */
+// Google Login Controller
 export const loginGoogle = catchAsync(async (req, res, next) => {
-    const { token } = req.body;
+    const { token, role } = req.body;
 
     // Validate token
-    if (!token) {
+    if (!token || !role) {
         return res.status(STATUS.BAD_REQUEST).json({
             success: false,
             error: {
                 status: STATUS.BAD_REQUEST,
-                message: 'Google token is required'
+                message: 'Google token and role are required'
             }
         });
     }
@@ -152,9 +182,29 @@ export const loginGoogle = catchAsync(async (req, res, next) => {
             }
         });
     }
-
-    // Login or create user
-    const user = await authService.loginWithGoogle(googleResult.user);
+    // Check existing user by email
+    const existingUser = await User.findByEmail(googleResult.user.email);
+    if (!existingUser) {
+        const user = await User.createWithGoogle(googleResult.user.email, googleResult.user.googleId, role);
+        if (!user) {
+            return res.status(STATUS.INTERNAL_SERVER_ERROR).json({
+                success: false,
+                error: {
+                    status: STATUS.INTERNAL_SERVER_ERROR,
+                    message: 'Failed to create user with Google account'
+                }
+            });
+        }
+    }
+    if (existingUser && existingUser.provider !== 'google') {
+        return res.status(STATUS.CONFLICT).json({
+            success: false,
+            error: {
+                status: STATUS.CONFLICT,
+                message: 'Email is already registered with a different provider'
+            }
+        });
+    }
 
     // Generate tokens
     const accessToken = generateAccessToken(user.id, user.email, user.role);
@@ -165,32 +215,16 @@ export const loginGoogle = catchAsync(async (req, res, next) => {
 
     res.status(STATUS.OK).json({
         success: true,
-        message: MESSAGES.LOGIN_SUCCESS,
-        data: {
-            id: user.id,
-            email: user.email,
-            role: user.role,
-            verified: user.verified,
-            isNewUser: !user.googleId
-        },
-        tokens: {
-            accessToken,
-            refreshToken
-        }
+        message: MESSAGES.LOGIN_SUCCESS
     });
 });
 
-/**
- * Refresh Token Controller
- * POST /auth/refresh-token
- */
+
+// Refresh Token Controller
 export const refreshToken = catchAsync(async (req, res, next) => {
-    const { refreshToken: token } = req.body;
-    const cookieToken = req.cookies?.refreshToken;
+    const refreshToken = req.cookies?.refreshToken;
 
-    const refreshTokenValue = token || cookieToken;
-
-    if (!refreshTokenValue) {
+    if (!refreshToken) {
         return res.status(STATUS.UNAUTHORIZED).json({
             success: false,
             error: {
@@ -201,7 +235,7 @@ export const refreshToken = catchAsync(async (req, res, next) => {
     }
 
     // Verify refresh token
-    const result = verifyRefreshToken(refreshTokenValue);
+    const result = verifyRefreshToken(refreshToken);
 
     if (!result.success) {
         return res.status(STATUS.UNAUTHORIZED).json({
@@ -217,28 +251,18 @@ export const refreshToken = catchAsync(async (req, res, next) => {
 
     // Generate new access token
     const newAccessToken = generateAccessToken(id, email, role);
+    const newRefreshToken = generateRefreshToken(id, email, role);
 
-    // Set cookie
-    res.cookie('accessToken', newAccessToken, {
-        httpOnly: true,
-        sameSite: 'Strict',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 15 * 60 * 1000
-    });
+     // Set new cookies
+    setAuthCookies(res, newAccessToken, newRefreshToken);
 
     res.status(STATUS.OK).json({
         success: true,
-        message: 'Token refreshed successfully',
-        data: {
-            accessToken: newAccessToken
-        }
+        message: 'Token refreshed successfully'
     });
 });
 
-/**
- * Logout Controller
- * POST /auth/logout
- */
+// Logout Controller
 export const logout = catchAsync(async (req, res, next) => {
     clearAuthCookies(res);
 
@@ -248,10 +272,7 @@ export const logout = catchAsync(async (req, res, next) => {
     });
 });
 
-/**
- * Forgot Password Controller
- * POST /auth/forgot-password
- */
+// Forgot Password Controller
 export const forgotPassword = catchAsync(async (req, res, next) => {
     const { email } = req.body;
 
@@ -264,12 +285,29 @@ export const forgotPassword = catchAsync(async (req, res, next) => {
             }
         });
     }
-
-    // Request password reset
-    const { user, resetToken } = await authService.requestPasswordReset(email);
-
+    if (!validator.isEmail(email)) {
+        return res.status(STATUS.BAD_REQUEST).json({
+            success: false,
+            error: {
+                status: STATUS.BAD_REQUEST,
+                message: 'Invalid email format'
+            }
+        });
+    }
+    // Check if user exists
+    const user = await User.findByEmail(email);
+    if (!user) {
+        return res.status(STATUS.OK).json({
+            success: true,
+            message: MESSAGES.PASSWORD_RESET_EMAIL_SENT
+        });
+    }
+    // Generate reset token
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    // Save Code
+    await User.saveResetPasswordCode(user, resetCode);
     // Send reset email
-    await authService.sendPasswordResetEmail(user, resetToken);
+    await User.sendResetPasswordEmail(user, resetCode);
 
     res.status(STATUS.OK).json({
         success: true,
@@ -277,31 +315,77 @@ export const forgotPassword = catchAsync(async (req, res, next) => {
     });
 });
 
-/**
- * Reset Password Controller
- * POST /auth/reset-password
- */
-export const resetPassword = catchAsync(async (req, res, next) => {
-    const { token, newPassword, confirmPassword } = req.body;
-
-    // Validate required fields
-    if (!token || !newPassword || !confirmPassword) {
+export const verifyResetCode = catchAsync(async (req, res, next) => {
+    const { email, code } = req.body;
+    if (!email || !code) {
         return res.status(STATUS.BAD_REQUEST).json({
             success: false,
             error: {
                 status: STATUS.BAD_REQUEST,
-                message: 'Token, new password, and confirm password are required'
+                message: 'Email and reset code are required'
             }
         });
     }
-
-    // Validate passwords match
-    if (newPassword !== confirmPassword) {
+    if (!validator.isEmail(email)) {
         return res.status(STATUS.BAD_REQUEST).json({
             success: false,
             error: {
                 status: STATUS.BAD_REQUEST,
-                message: 'Passwords do not match'
+                message: 'Invalid email format'
+            }
+        });
+    }
+    // Verify reset code
+    const result = await User.verifyResetPasswordCode(email, code);
+
+    if (!result.success) {
+        return res.status(STATUS.UNAUTHORIZED).json({
+            success: false,
+            error: {
+                status: STATUS.UNAUTHORIZED,
+                message: result.message || 'Invalid reset code'
+            }
+        });
+    }
+    // Send reset token
+    const { generateResetPasswordToken } = await import('../services/jwtService.js');
+    const resetToken = generateResetPasswordToken(result.user.id);
+    res.cookie('resetToken', resetToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 15 * 60 * 1000 // 15 minutes
+    });
+    res.status(STATUS.OK).json({
+        success: true,
+        message: 'Reset code verified successfully'
+    });
+});
+
+// Reset Password Controller
+export const resetPassword = catchAsync(async (req, res, next) => {
+    const { newPassword } = req.body;
+    const { resetToken: token } = req.cookies;
+
+    // Verify Token
+    if (!token) {
+        return res.status(STATUS.UNAUTHORIZED).json({
+            success: false,
+            error: {
+                status: STATUS.UNAUTHORIZED,
+                message: 'Reset token is required'
+            }
+        });
+    }
+    
+
+    // Validate required fields
+    if (!token || !newPassword ) {
+        return res.status(STATUS.BAD_REQUEST).json({
+            success: false,
+            error: {
+                status: STATUS.BAD_REQUEST,
+                message: 'Token and new password are required'
             }
         });
     }
@@ -335,12 +419,9 @@ export const resetPassword = catchAsync(async (req, res, next) => {
     });
 });
 
-/**
- * Change Password Controller
- * POST /auth/change-password
- */
+// Change Password Controller
 export const changePassword = catchAsync(async (req, res, next) => {
-    const { oldPassword, newPassword, confirmPassword } = req.body;
+    const { oldPassword, newPassword } = req.body;
     const userId = req.user?.id;
 
     // Validate authentication
@@ -355,29 +436,18 @@ export const changePassword = catchAsync(async (req, res, next) => {
     }
 
     // Validate required fields
-    if (!oldPassword || !newPassword || !confirmPassword) {
+    if (!oldPassword || !newPassword ) {
         return res.status(STATUS.BAD_REQUEST).json({
             success: false,
             error: {
                 status: STATUS.BAD_REQUEST,
-                message: 'Old password, new password, and confirm password are required'
-            }
-        });
-    }
-
-    // Validate passwords match
-    if (newPassword !== confirmPassword) {
-        return res.status(STATUS.BAD_REQUEST).json({
-            success: false,
-            error: {
-                status: STATUS.BAD_REQUEST,
-                message: 'New passwords do not match'
+                message: 'Old password, new password are required'
             }
         });
     }
 
     // Change password
-    const user = await authService.changePassword(userId, oldPassword, newPassword);
+    const user = await User.changePassword(userId, oldPassword, newPassword);
 
     res.status(STATUS.OK).json({
         success: true,
@@ -389,10 +459,7 @@ export const changePassword = catchAsync(async (req, res, next) => {
     });
 });
 
-/**
- * Verify Email Controller
- * POST /auth/verify-email
- */
+// Verify Email Controller
 export const verifyEmail = catchAsync(async (req, res, next) => {
     const { email, code } = req.body;
 
@@ -406,8 +473,18 @@ export const verifyEmail = catchAsync(async (req, res, next) => {
         });
     }
 
+    if (!validator.isEmail(email)) {
+        return res.status(STATUS.BAD_REQUEST).json({
+            success: false,
+            error: {
+                status: STATUS.BAD_REQUEST,
+                message: 'Invalid email format'
+            }
+        });
+    }
+
     // Verify email
-    const user = await authService.verifyEmailWithCode(email, code);
+    const user = await User.verifyEmail(email, code);
 
     res.status(STATUS.OK).json({
         success: true,
@@ -420,10 +497,7 @@ export const verifyEmail = catchAsync(async (req, res, next) => {
     });
 });
 
-/**
- * Get Current User Controller
- * GET /auth/me
- */
+// Get Current User Controller
 export const getCurrentUser = catchAsync(async (req, res, next) => {
     const userId = req.user?.id;
 
@@ -438,7 +512,7 @@ export const getCurrentUser = catchAsync(async (req, res, next) => {
     }
 
     // Find user
-    const user = await authService.findUserById(userId);
+    const user = await User.findById(userId);
 
     res.status(STATUS.OK).json({
         success: true,

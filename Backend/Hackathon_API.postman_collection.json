@@ -1,0 +1,720 @@
+{
+	"info": {
+		"_postman_id": "hackathon-api-collection",
+		"name": "Hackathon API",
+		"description": "API collection for Hackathon Template - Phishing Detection Backend",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:9000",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Auth",
+			"description": "Authentication endpoints",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"Password123!\",\n    \"name\": \"Test User\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/v1/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "v1", "register"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.accessToken) {",
+									"    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+									"}",
+									"if (jsonData.refreshToken) {",
+									"    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+									"}",
+									"if (jsonData.user && jsonData.user.id) {",
+									"    pm.collectionVariables.set('userId', jsonData.user.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"Password123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/v1/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "v1", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login with Google",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.accessToken) {",
+									"    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+									"}",
+									"if (jsonData.refreshToken) {",
+									"    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"idToken\": \"your-google-id-token\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/v1/login-google",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "v1", "login-google"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Email",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"token\": \"email-verification-token\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/v1/verify-email",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "v1", "verify-email"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Forgot Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/v1/forgot-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "v1", "forgot-password"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"token\": \"reset-token\",\n    \"password\": \"NewPassword123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/v1/reset-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "v1", "reset-password"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.accessToken) {",
+									"    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+									"}",
+									"if (jsonData.refreshToken) {",
+									"    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/v1/refresh-token",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "v1", "refresh-token"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/v1/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "v1", "logout"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"currentPassword\": \"Password123!\",\n    \"newPassword\": \"NewPassword456!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/v1/change-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "v1", "change-password"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User (Auth)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/v1/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "v1", "me"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"description": "User management endpoints",
+			"item": [
+				{
+					"name": "Get User Profile (Public)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/v1/profile/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "v1", "profile", "{{userId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/v1/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "v1", "me"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update My Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Name\",\n    \"bio\": \"My bio\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/v1/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "v1", "me"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/v1?page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "v1"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search Users (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/v1/search?q=test&page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "v1", "search"],
+							"query": [
+								{
+									"key": "q",
+									"value": "test"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Statistics (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/v1/stats/overview",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "v1", "stats", "overview"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Role (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"role\": \"ADMIN\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/v1/{{userId}}/role",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "v1", "{{userId}}", "role"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User (Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/v1/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "v1", "{{userId}}"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Phishing Detection",
+			"description": "AI-driven phishing detection endpoints",
+			"item": [
+				{
+					"name": "Analyze URL",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"url\": \"https://suspicious-example.com/login\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/phishing/v1/v1/analyze",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "phishing", "v1", "analyze"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Analyze Email",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subject\": \"Urgent: Your account has been compromised\",\n    \"body\": \"Dear user, click here to verify your account immediately or it will be suspended.\",\n    \"sender\": \"security@fake-bank.com\",\n    \"links\": [\"https://suspicious-link.com/verify\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/phishing/v1/analyze-email",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "phishing", "analyze-email"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Analyze Email (Raw Content)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"content\": \"Dear valued customer, your account needs immediate verification. Click here: http://phishing-link.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/phishing/v1/analyze-email",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "phishing", "analyze-email"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Analyze Page Content",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"url\": \"https://suspicious-site.com\",\n    \"title\": \"Login - Your Bank\",\n    \"forms\": [\n        {\n            \"action\": \"https://suspicious-site.com/steal\",\n            \"inputs\": [\"username\", \"password\", \"ssn\"]\n        }\n    ],\n    \"links\": [\"https://legitimate-bank.com\", \"https://suspicious-site.com/contact\"],\n    \"textContent\": \"Enter your credentials to continue. Verify your identity now.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/phishing/v1/analyze-page",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "phishing", "analyze-page"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Training Content",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/phishing/v1/training",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "phishing", "training"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Training Content by Topic",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/phishing/v1/training/email-phishing",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "phishing", "training", "email-phishing"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Phishing Simulation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"email\",\n    \"difficulty\": \"medium\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/phishing/v1/simulation",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "phishing", "simulation"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Report Phishing URL",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"url\": \"https://phishing-site.com/fake-login\",\n    \"reason\": \"Fake login page mimicking a bank\",\n    \"reporterEmail\": \"reporter@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/phishing/v1/report",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "phishing", "report"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Analyze URLs",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"urls\": [\n        \"https://example.com\",\n        \"https://suspicious-site.com/login\",\n        \"https://legitimate-bank.com\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/phishing/v1/bulk-analyze",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "phishing", "bulk-analyze"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Health",
+			"description": "Health check endpoint",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

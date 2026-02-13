@@ -1,8 +1,8 @@
 // AI Driven Phishing Detection API Routes
 import express from 'express';
 import aiService from '../services/aiService.js';
-import catchAsync from '../utils/catchAsync.js';
-import { authMiddleware } from '../middleware/authMiddleware.js';
+import {catchAsync} from '../utils/catchAsync.js';
+import { authenticate } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -80,7 +80,7 @@ router.post('/analyze-page', catchAsync(async (req, res) => {
  * @desc Get phishing awareness training content
  * @access Protected
  */
-router.get('/training/:topic', authMiddleware, catchAsync(async (req, res) => {
+router.get('/training/:topic', authenticate, catchAsync(async (req, res) => {
     const { topic } = req.params;
     const result = await aiService.generateTrainingContent(topic);
     res.json(result);
@@ -91,7 +91,7 @@ router.get('/training/:topic', authMiddleware, catchAsync(async (req, res) => {
  * @desc Get general phishing awareness training
  * @access Protected
  */
-router.get('/training', authMiddleware, catchAsync(async (req, res) => {
+router.get('/training', authenticate, catchAsync(async (req, res) => {
     const result = await aiService.generateTrainingContent('general');
     res.json(result);
 }));
@@ -101,7 +101,7 @@ router.get('/training', authMiddleware, catchAsync(async (req, res) => {
  * @desc Generate phishing simulation for training
  * @access Protected
  */
-router.post('/simulation', authMiddleware, catchAsync(async (req, res) => {
+router.post('/simulation', authenticate, catchAsync(async (req, res) => {
     const { type = 'generic', difficulty = 'medium' } = req.body;
     const result = await aiService.generatePhishingSimulation(type, difficulty);
     res.json(result);
@@ -140,7 +140,7 @@ router.post('/report', catchAsync(async (req, res) => {
  * @desc Analyze multiple URLs at once
  * @access Protected
  */
-router.post('/bulk-analyze', authMiddleware, catchAsync(async (req, res) => {
+router.post('/bulk-analyze', authenticate, catchAsync(async (req, res) => {
     const { urls } = req.body;
     
     if (!urls || !Array.isArray(urls)) {

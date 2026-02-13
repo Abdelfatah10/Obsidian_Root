@@ -1,4 +1,5 @@
 import { prisma } from '../prisma/client.js';
+import bcrypt from 'bcryptjs';
 
 
 export default class User {
@@ -42,12 +43,12 @@ export default class User {
     }
 
 
-    async create() {
+    async create(email, password, role, code) {
         const createdUser = await prisma.user.create({
             data: {
-                email: this.email,
-                password: this.password,
-                role: this.role || 'user',
+                email: email,
+                password: password,
+                role: role || 'user',
                 provider: 'local',
                 verified: false
             }
@@ -55,7 +56,7 @@ export default class User {
         const verificationCode = await prisma.verificationCode.create({
             data: {
                 userId: createdUser.id,
-                code: Math.floor(100000 + Math.random() * 900000).toString(),
+                code: code,
                 expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 minutes from now
             }
         });
@@ -65,11 +66,12 @@ export default class User {
         return createdUser;
     }
 
-    async createWithGoogle() {
+    async createWithGoogle(email, googleId, role) {
         const createdUser = await prisma.user.create({
             data: {
-                email: this.email,
-                googleId: this.googleId,
+                email: email,
+                googleId: googleId,
+                role: role || 'user',
                 provider: 'google',
                 verified: true
             }
@@ -80,12 +82,7 @@ export default class User {
         return createdUser;
     }
 
-    /**
-     * Update user by ID
-     * @param {string} id - User ID
-     * @param {Object} data - Data to update
-     * @returns {Promise<Object>} Updated user
-     */
+    // Update user by ID
     static async update(id, data) {
         return await prisma.user.update({
             where: { id },
@@ -93,23 +90,14 @@ export default class User {
         });
     }
 
-    /**
-     * Delete user by ID
-     * @param {string} id - User ID
-     * @returns {Promise<Object>} Deleted user
-     */
+    // Delete user by ID
     static async delete(id) {
         return await prisma.user.delete({
             where: { id }
         });
     }
 
-    /**
-     * Get all users (paginated)
-     * @param {number} skip - Number of records to skip
-     * @param {number} take - Number of records to take
-     * @returns {Promise<Array>} Array of users
-     */
+    // Get all users (paginated)
     static async getAll(skip = 0, take = 10) {
         return await prisma.user.findMany({
             skip,
@@ -129,41 +117,13 @@ export default class User {
         });
     }
 
-    /**
-     * Count total users
-     * @returns {Promise<number>} Total user count
-     */
+    // Count total users
     static async count() {
         return await prisma.user.count();
     }
 
-    /**
-     * Search users by email or name
-     * @param {string} searchTerm - Search term
-     * @param {number} skip - Number of records to skip
-     * @param {number} take - Number of records to take
-     * @returns {Promise<Array>} Array of matched users
-     */
-    static async search(searchTerm, skip = 0, take = 10) {
-        return await prisma.user.findMany({
-            where: {
-                email: { contains: searchTerm, mode: 'insensitive' }
-            },
-            skip,
-            take,
-            orderBy: {
-                createdAt: 'desc'
-            }
-        });
-    }
 
-    /**
-     * Get users by role
-     * @param {string} role - User role
-     * @param {number} skip - Number of records to skip
-     * @param {number} take - Number of records to take
-     * @returns {Promise<Array>} Array of users with specified role
-     */
+    // Get users by role (paginated)
     static async getByRole(role, skip = 0, take = 10) {
         return await prisma.user.findMany({
             where: { role },
@@ -175,36 +135,7 @@ export default class User {
         });
     }
 
-    /**
-     * Check if user exists by email
-     * @param {string} email - User email
-     * @returns {Promise<boolean>} True if user exists
-     */
-    static async existsByEmail(email) {
-        const user = await prisma.user.findUnique({
-            where: { email }
-        });
-        return !!user;
-    }
-
-    /**
-     * Check if user exists by ID
-     * @param {string} id - User ID
-     * @returns {Promise<boolean>} True if user exists
-     */
-    static async existsById(id) {
-        const user = await prisma.user.findUnique({
-            where: { id }
-        });
-        return !!user;
-    }
-
-    /**
-     * Update user role
-     * @param {string} id - User ID
-     * @param {string} role - New role
-     * @returns {Promise<Object>} Updated user
-     */
+    // Update user role
     static async updateRole(id, role) {
         return await prisma.user.update({
             where: { id },
@@ -212,12 +143,7 @@ export default class User {
         });
     }
 
-    /**
-     * Toggle user verification status
-     * @param {string} id - User ID
-     * @param {boolean} verified - Verification status
-     * @returns {Promise<Object>} Updated user
-     */
+    // Toggle user verification status
     static async toggleVerification(id, verified) {
         return await prisma.user.update({
             where: { id },
@@ -227,11 +153,7 @@ export default class User {
 
 
 
-    /**
-     * Get user public profile (safe information)
-     * @param {string} id - User ID
-     * @returns {Promise<Object>} User public profile
-     */
+    // Get public profile of user (without sensitive info)
     static async getPublicProfile(id) {
         return await prisma.user.findUnique({
             where: { id },
@@ -246,14 +168,89 @@ export default class User {
         });
     }
 
-    /**
-     * Get user count by provider
-     * @param {string} provider - OAuth provider name
-     * @returns {Promise<number>} Count of users for provider
-     */
+    // Count users by provider
     static async countByProvider(provider) {
         return await prisma.user.count({
             where: { provider }
         });
     }
+
+
+    // Reset password for user
+    static async resetPassword(userId, newPassword) {
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        return await User.update(userId, { password: hashedPassword });
+    }
+
+    // Change password for authenticated user
+    static async changePassword(userId, oldPassword, newPassword) {
+        const user = await User.findByIdOrFail(userId);
+
+        if (!user.password) {
+            const error = new Error('This account uses Google sign-in and has no password to change');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isMatch) {
+            const error = new Error('Current password is incorrect');
+            error.statusCode = 401;
+            throw error;
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        return await User.update(userId, { password: hashedPassword });
+    }
+
+    // Verify email with code
+    static async verifyEmail(email, code) {
+        const user = await User.findByEmail(email);
+        if (!user) {
+            const error = new Error('User not found');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const verificationCode = await prisma.verificationCode.findFirst({
+            where: {
+                userId: user.id,
+                code,
+                type: 'email_verification',
+                expiresAt: { gt: new Date() }
+            }
+        });
+
+        if (!verificationCode) {
+            const error = new Error('Invalid or expired verification code');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const updatedUser = await User.update(user.id, { verified: true });
+        await prisma.verificationCode.delete({ where: { id: verificationCode.id } });
+
+        return updatedUser;
+    }
+    async saveResetPasswordCode (user, code) {
+        await prisma.verificationCode.create({
+            data: {
+                userId: user.id,
+                code: code,
+                type: 'password_reset',
+                expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 minutes from now
+            }
+        });
+    }
+
+    async sendResetPasswordEmail(user, code) {
+        const mailOptions = {
+            from: '"Phishing Awareness" <>',
+            to: user.email,
+            subject: 'Password Reset Request',
+            text: `You requested a password reset. Use the following code to reset your password: ${code}. This code will expire in 15 minutes. If you did not request this, please ignore this email.`
+        };
+        await transporter.sendMail(mailOptions);
+    }
+
 }

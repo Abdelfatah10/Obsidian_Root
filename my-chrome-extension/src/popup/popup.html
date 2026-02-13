@@ -13,6 +13,9 @@
                 <span class="shield-icon">🛡️</span>
                 <h1>Phishing Shield</h1>
             </div>
+            <div class="api-status" id="api-status" title="API Status">
+                <span class="api-dot"></span>
+            </div>
         </header>
         
         <main class="main-content">
@@ -20,7 +23,10 @@
             <section id="site-status" class="status-card">
                 <div class="status-header">
                     <span class="status-icon" id="status-icon">🔄</span>
-                    <span class="status-text" id="status-text">Analyzing...</span>
+                    <div class="status-info">
+                        <span class="status-text" id="status-text">Analyzing...</span>
+                        <span class="threat-level" id="threat-level"></span>
+                    </div>
                 </div>
                 <div class="status-details">
                     <div class="url-display" id="current-url">Loading...</div>
@@ -29,24 +35,34 @@
                         <div class="score-bar">
                             <div class="score-fill" id="score-fill"></div>
                         </div>
-                        <span id="score-value">0</span>
+                        <span id="score-value">0%</span>
                     </div>
                 </div>
+                <div class="analysis-type" id="analysis-type"></div>
             </section>
             
             <!-- Indicators Section -->
             <section id="indicators-section" class="indicators-card hidden">
-                <h3>Detected Indicators</h3>
+                <h3>
+                    <span>⚠️</span> Detected Indicators
+                    <span class="indicator-count" id="indicator-count">0</span>
+                </h3>
                 <ul id="indicators-list"></ul>
+            </section>
+            
+            <!-- AI Analysis Section -->
+            <section id="ai-section" class="ai-card hidden">
+                <h3><span>🤖</span> AI Analysis</h3>
+                <p id="ai-analysis"></p>
             </section>
             
             <!-- Quick Actions -->
             <section class="actions-card">
                 <button id="scan-btn" class="action-btn primary">
-                    <span>🔍</span> Scan Page
+                    <span>🔍</span> Scan Now
                 </button>
                 <button id="whitelist-btn" class="action-btn secondary">
-                    <span>✓</span> Trust Site
+                    <span>✓</span> Trust
                 </button>
                 <button id="report-btn" class="action-btn danger">
                     <span>⚠️</span> Report
@@ -57,29 +73,39 @@
             <section class="stats-card">
                 <div class="stat">
                     <span class="stat-value" id="total-scans">0</span>
-                    <span class="stat-label">Scans Today</span>
+                    <span class="stat-label">Today</span>
                 </div>
                 <div class="stat">
-                    <span class="stat-value" id="threats-blocked">0</span>
-                    <span class="stat-label">Threats Blocked</span>
+                    <span class="stat-value danger" id="threats-blocked">0</span>
+                    <span class="stat-label">Threats</span>
                 </div>
                 <div class="stat">
                     <span class="stat-value" id="whitelist-count">0</span>
-                    <span class="stat-label">Trusted Sites</span>
+                    <span class="stat-label">Trusted</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="cache-count">0</span>
+                    <span class="stat-label">Cached</span>
                 </div>
             </section>
             
             <!-- Toggle Section -->
             <section class="toggle-card">
                 <div class="toggle-item">
-                    <span>Real-time Protection</span>
+                    <div class="toggle-info">
+                        <span>🔒</span>
+                        <span>Real-time Protection</span>
+                    </div>
                     <label class="toggle-switch">
                         <input type="checkbox" id="protection-toggle" checked>
                         <span class="slider"></span>
                     </label>
                 </div>
                 <div class="toggle-item">
-                    <span>Notifications</span>
+                    <div class="toggle-info">
+                        <span>🔔</span>
+                        <span>Notifications</span>
+                    </div>
                     <label class="toggle-switch">
                         <input type="checkbox" id="notifications-toggle" checked>
                         <span class="slider"></span>
@@ -89,9 +115,9 @@
         </main>
         
         <footer class="footer">
-            <a href="#" id="history-link">View History</a>
-            <span class="separator">|</span>
-            <a href="#" id="settings-link">Settings</a>
+            <a href="#" id="history-link">📜 History</a>
+            <a href="#" id="settings-link">⚙️ Settings</a>
+            <span class="version">v1.0.0</span>
         </footer>
     </div>
     <script src="popup.js"></script>
