@@ -12,6 +12,9 @@ import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import phishingRoutes from './routes/phishing.routes.js';
 import companyRoutes from './routes/company.routes.js';
+import emailRoutes from './routes/email.routes.js';
+import urlRoutes from './routes/url.routes.js';
+import fileRoutes from './routes/file.routes.js';
 
 
 // Get the current directory path 
@@ -23,14 +26,27 @@ const app = express();
 
 
 // Configure CORS (Cross-Origin Resource Sharing) middleware
+const allowedOrigins = [
+    'http://localhost:8080',
+    'http://localhost:3000',
+    'http://localhost:9000',
+    'https://obsidian-guard-frontend.vercel.app',
+];
+
 app.use(cors({
-    origin: [
-        ENV.DOMAIN_URL || 'http://localhost:8080',
-        'http://localhost:3000',
-        /^chrome-extension:\/\//  // Allow Chrome extensions
-    ],
+    origin: function (origin, callback) {
+        // allow requests with no origin like mobile apps or curl
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin) || /^chrome-extension:\/\//.test(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
+
 
 // Middleware for parsing incoming request bodies
 app.use(express.json());
@@ -52,6 +68,9 @@ app.use('/api/auth/v1', authRoutes);
 app.use('/api/users/v1', userRoutes);
 app.use('/api/phishing/v1', phishingRoutes);
 app.use('/api/company/v1', companyRoutes);
+app.use('/api/email/v1', emailRoutes);
+app.use('/api/url/v1', urlRoutes);
+app.use('/api/file/v1', fileRoutes);
 
 
 

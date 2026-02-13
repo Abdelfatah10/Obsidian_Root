@@ -1,53 +1,7 @@
-/* Phishing Shield - Content Script Styles */
+/* Obsidian Guard – Content Script Styles */
+/* Banner styles are isolated inside Shadow DOM (content.js). */
+/* This file is kept minimal – only host-level reset needed.  */
 
-/* These styles are injected into web pages for highlighting suspicious elements */
-
-/* Suspicious link highlight */
-.phishing-shield-suspicious-link {
-    outline: 2px solid #ff6600 !important;
-    outline-offset: 2px !important;
-    position: relative !important;
-}
-
-.phishing-shield-suspicious-link::after {
-    content: '⚠️ Suspicious' !important;
-    position: absolute !important;
-    bottom: 100% !important;
-    left: 0 !important;
-    background: #ff6600 !important;
-    color: white !important;
-    padding: 2px 6px !important;
-    font-size: 11px !important;
-    border-radius: 3px !important;
-    white-space: nowrap !important;
-    z-index: 999999 !important;
-    pointer-events: none !important;
-}
-
-/* Dangerous link highlight */
-.phishing-shield-dangerous-link {
-    outline: 3px solid #dc3545 !important;
-    outline-offset: 2px !important;
-    position: relative !important;
-}
-
-.phishing-shield-dangerous-link::after {
-    content: '🚨 Dangerous' !important;
-    position: absolute !important;
-    bottom: 100% !important;
-    left: 0 !important;
-    background: #dc3545 !important;
-    color: white !important;
-    padding: 2px 6px !important;
-    font-size: 11px !important;
-    border-radius: 3px !important;
-    white-space: nowrap !important;
-    z-index: 999999 !important;
-    pointer-events: none !important;
-}
-
-/* Safe link indicator */
-.phishing-shield-safe-link {
-    outline: 2px solid #28a745 !important;
-    outline-offset: 2px !important;
+#obsidian-guard-banner-host {
+    all: initial !important;
 }

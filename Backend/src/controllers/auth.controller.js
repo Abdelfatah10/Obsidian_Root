@@ -5,12 +5,14 @@ import { MESSAGES } from '../utils/constants/messages.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { verifyRefreshToken, generateAccessToken, generateRefreshToken, setAuthCookies, clearAuthCookies } from '../services/jwtService.js';
 import User from '../models/User.js';
+import * as authService from '../services/authService.js';
 
 
 // Register Controller
 export const register = catchAsync(async (req, res, next) => {
     const { email, password, role } = req.body;
 
+    console.log('Register Request Body:', req.body);
     // Validate required fields
     if (!email || !password || !role) {
         return res.status(STATUS.BAD_REQUEST).json({
@@ -100,6 +102,7 @@ export const register = catchAsync(async (req, res, next) => {
 export const login = catchAsync(async (req, res, next) => {
     const { email, password } = req.body;
 
+    console.log('Login Request Body:', req.body);
     // Validate required fields
     if (!email || !password) {
         return res.status(STATUS.BAD_REQUEST).json({
@@ -159,7 +162,7 @@ export const login = catchAsync(async (req, res, next) => {
 export const loginGoogle = catchAsync(async (req, res, next) => {
     const { token, role } = req.body;
 
-    // Validate token
+    console.log('Google Login Request Body:', req.body);
     if (!token || !role) {
         return res.status(STATUS.BAD_REQUEST).json({
             success: false,
@@ -184,8 +187,10 @@ export const loginGoogle = catchAsync(async (req, res, next) => {
     }
     // Check existing user by email
     const existingUser = await User.findByEmail(googleResult.user.email);
+    let user = existingUser;
+    
     if (!existingUser) {
-        const user = await User.createWithGoogle(googleResult.user.email, googleResult.user.googleId, role);
+        user = await User.createWithGoogle(googleResult.user.email, googleResult.user.googleId, role);
         if (!user) {
             return res.status(STATUS.INTERNAL_SERVER_ERROR).json({
                 success: false,
@@ -195,8 +200,7 @@ export const loginGoogle = catchAsync(async (req, res, next) => {
                 }
             });
         }
-    }
-    if (existingUser && existingUser.provider !== 'google') {
+    } else if (existingUser.provider !== 'google') {
         return res.status(STATUS.CONFLICT).json({
             success: false,
             error: {
@@ -316,6 +320,7 @@ export const forgotPassword = catchAsync(async (req, res, next) => {
 });
 
 export const verifyResetCode = catchAsync(async (req, res, next) => {
+    console.log('Verify Reset Code Request Body:', req.body);
     const { email, code } = req.body;
     if (!email || !code) {
         return res.status(STATUS.BAD_REQUEST).json({

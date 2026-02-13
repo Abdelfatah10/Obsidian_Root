@@ -1,5 +1,6 @@
 import { prisma } from '../prisma/client.js';
 import bcrypt from 'bcryptjs';
+import {transporter} from '../services/mailerService.js';
 
 
 export default class User {
@@ -43,12 +44,12 @@ export default class User {
     }
 
 
-    async create(email, password, role, code) {
+    static async create(email, password, role, code) {
         const createdUser = await prisma.user.create({
             data: {
                 email: email,
                 password: password,
-                role: role || 'user',
+                role: role || 'USER',
                 provider: 'local',
                 verified: false
             }
@@ -66,12 +67,12 @@ export default class User {
         return createdUser;
     }
 
-    async createWithGoogle(email, googleId, role) {
+    static async createWithGoogle(email, googleId, role) {
         const createdUser = await prisma.user.create({
             data: {
                 email: email,
                 googleId: googleId,
-                role: role || 'user',
+                role: role || 'USER',
                 provider: 'google',
                 verified: true
             }
@@ -232,7 +233,7 @@ export default class User {
 
         return updatedUser;
     }
-    async saveResetPasswordCode (user, code) {
+    static async saveResetPasswordCode (user, code) {
         await prisma.verificationCode.create({
             data: {
                 userId: user.id,
@@ -243,12 +244,45 @@ export default class User {
         });
     }
 
-    async sendResetPasswordEmail(user, code) {
+    static async verifyResetPasswordCode(email, code) {
+        const user = await User.findByEmail(email);
+        if (!user) {
+            const error = new Error('User not found');
+            error.statusCode = 404;
+            throw error;
+        }
+        const verificationCode = await prisma.verificationCode.findFirst({
+            where: {
+                userId: user.id,
+                code,
+                type: 'password_reset',
+                expiresAt: { gt: new Date() }
+            }        });
+            console.log('Verification Code Found:', verificationCode);
+        if (!verificationCode) {
+            const error = new Error('Invalid or expired reset code');
+            error.statusCode = 400;
+            throw error;
+        }
+        return user;
+    }
+
+    static async sendResetPasswordEmail(user, code) {
         const mailOptions = {
             from: '"Phishing Awareness" <>',
             to: user.email,
             subject: 'Password Reset Request',
             text: `You requested a password reset. Use the following code to reset your password: ${code}. This code will expire in 15 minutes. If you did not request this, please ignore this email.`
+        };
+        await transporter.sendMail(mailOptions);
+    }
+
+    static async sendVerificationEmail(user, code) {
+        const mailOptions = {
+            from: '"Phishing Awareness" <>',
+            to: user.email,
+            subject: 'Email Verification',
+            text: `Thank you for registering. Please use the following code to verify your email: ${code}. This code will expire in 15 minutes.`
         };
         await transporter.sendMail(mailOptions);
     }

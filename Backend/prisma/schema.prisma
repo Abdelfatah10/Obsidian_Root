@@ -14,16 +14,25 @@ model User {
     password  String?
     verified  Boolean @default(false)
 
-    role      String  @default("user")
+    role      String  @default("USER")
 
     // Provider
     provider String @default("local")
     googleId String? @unique
+    
+    // Gmail OAuth tokens for email reading
+    gmailAccessToken  String?
+    gmailRefreshToken String?
+    gmailTokenExpiry  DateTime?
+    gmailConnected    Boolean @default(false)
 
     // Relation
     verificationCodes VerificationCode[]
     entreprise        Entreprise?
     companyEmployees  CompanyEmployee[]
+    emails            Email[]
+    urlScans          UrlScan[]
+    fileScans         FileScan[]
 
     // Timestamps
     createdAt DateTime @default(now())
@@ -89,3 +98,148 @@ model CompanyEmployee {
     @@unique([entrepriseId, email]) // Prevent duplicate invites
     @@map("company_employees")
 }
+
+model Person {
+    id        Int     @id @default(autoincrement())
+    userId    Int
+    name      String
+    
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("persons")
+}
+
+model Email {
+    id            Int      @id @default(autoincrement())
+    userId        Int
+    
+    // Email metadata
+    gmailId       String?  @unique  // Gmail message ID for sync
+    threadId      String?           // Gmail thread ID
+    subject       String?
+    sender        String
+    senderName    String?
+    recipients    String[]          // Array of recipient emails
+    snippet       String?           // Preview text
+    body          String?           // Full email body (HTML or text)
+    bodyPlain     String?           // Plain text version
+    
+    // Analysis results
+    isAnalyzed    Boolean  @default(false)
+    isPhishing    Boolean  @default(false)
+    phishingScore Float    @default(0)
+    confidence    Float    @default(0)
+    indicators    String[] // Array of detected indicators
+    reason        String?
+    recommendation String? // safe, caution, danger
+    
+    // Status
+    isRead        Boolean  @default(false)
+    isStarred     Boolean  @default(false)
+    isArchived    Boolean  @default(false)
+    isDeleted     Boolean  @default(false)
+    labels        String[] // Gmail labels
+    
+    // Timestamps
+    receivedAt    DateTime?
+    analyzedAt    DateTime?
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+    
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    
+    @@index([userId, isDeleted])
+    @@index([userId, isPhishing])
+    @@map("emails")
+}
+
+model UrlScan {
+    id            Int      @id @default(autoincrement())
+    userId        Int
+    
+    // URL & Hostname
+    url           String
+    hostname      String
+    
+    // Screenshot data
+    screenshot    String?  // base64 data URL or null
+    screenshotHash String? // perceptual hash hex
+    screenshotError String?
+    
+    // Visual similarity matches
+    visualMatches Json?    // array of {site, domain, similarity, isLikelyClone}
+    topMatch      String?  // top matching site name
+    topSimilarity Int?     // top match similarity %
+    
+    // Intelligence
+    dnsInfo       Json?    // DNS records, SPF, DMARC data
+    urlIntel      Json?    // IP, geolocation, server headers
+    
+    // Risk assessment
+    riskScore     Int      @default(0)
+    riskLevel     String   @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
+    riskFactors   String[] // array of risk factor descriptions
+    isTrusted     Boolean  @default(false) // known trusted domain
+    
+    // Analysis metadata
+    analysisTime  String?  // e.g. "1.2s"
+    knownSitesCount Int    @default(0)
+    
+    // Timestamps
+    scannedAt     DateTime @default(now())
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+    
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    
+    @@index([userId, scannedAt])
+    @@index([userId, riskScore])
+    @@map("url_scans")
+}
+
+model FileScan {
+    id              Int      @id @default(autoincrement())
+    userId          Int
+    
+    // File metadata
+    fileName        String
+    fileSize        Int
+    mimeType        String?
+    sha256          String
+    md5             String?
+    fileType        String?     // e.g. "PE32 executable", "PDF document"
+    
+    // VirusTotal detection stats
+    maliciousCount  Int      @default(0)
+    suspiciousCount Int      @default(0)
+    harmlessCount   Int      @default(0)
+    undetectedCount Int      @default(0)
+    totalEngines    Int      @default(0)
+    
+    // Top detections (JSON array)
+    detections      Json?       // [{engine, category, result}]
+    
+    // Threat assessment
+    threatLevel     String   @default("CLEAN")   // CLEAN, LOW, MEDIUM, HIGH, CRITICAL
+    threatLabel     String   @default("Clean")
+    threatScore     Int      @default(0)
+    
+    // Extra metadata
+    tags            String[]
+    analysisTime    String?
+    fromCache       Boolean  @default(false)
+    analysisStatus  String   @default("completed")
+    
+    // Timestamps
+    scannedAt       DateTime @default(now())
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+    
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    
+    @@index([userId, scannedAt])
+    @@index([userId, threatLevel])
+    @@map("file_scans")
+}
+

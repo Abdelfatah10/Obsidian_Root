@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "Phishing Shield",
-    "version": "1.0.0",
-    "description": "AI-powered phishing detection extension that protects you from malicious websites and emails.",
+    "name": "Obsidian Guard",
+    "version": "2.0.0",
+    "description": "AI-powered phishing detection – every URL is checked automatically with real-time status banners and blocking pages.",
     "permissions": [
         "activeTab",
         "storage",
@@ -20,7 +20,7 @@
     },
     "action": {
         "default_popup": "src/popup/popup.html",
-        "default_title": "Phishing Shield",
+        "default_title": "Obsidian Guard",
         "default_icon": {
             "16": "icons/icon16.png",
             "48": "icons/icon48.png",

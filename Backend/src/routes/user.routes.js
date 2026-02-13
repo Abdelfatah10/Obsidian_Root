@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import * as userController from '../controllers/user.controller.js';
-import { authenticate, authorize } from '../middleware/authMiddleware.js';
-import { ROLES } from '../utils/constants/roles.js';
+import { authenticate } from '../middleware/authMiddleware.js';
 
 const userRoutes = Router();
 
@@ -12,11 +11,5 @@ userRoutes.get('/profile/:id', userController.getUserProfile);
 userRoutes.get('/me', authenticate, userController.getCurrentUserProfile);
 userRoutes.put('/me', authenticate, userController.updateUserProfile);
 
-// Admin routes (admin role required)
-userRoutes.get('/', authenticate, authorize([ROLES.ADMIN]), userController.getAllUsers);
-userRoutes.get('/search', authenticate, authorize([ROLES.ADMIN]), userController.searchUsers);
-userRoutes.get('/stats/overview', authenticate, authorize([ROLES.ADMIN]), userController.getUserStatistics);
-userRoutes.put('/:id/role', authenticate, authorize([ROLES.ADMIN]), userController.updateUserRole);
-userRoutes.delete('/:id', authenticate, authorize([ROLES.ADMIN]), userController.deleteUser);
 
 export default userRoutes;

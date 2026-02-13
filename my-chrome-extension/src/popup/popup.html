@@ -1,125 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="popup.css">
-    <title>Phishing Shield</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="popup.css">
+  <title>Obsidian Guard</title>
 </head>
 <body>
-    <div id="popup-container">
-        <header class="header">
-            <div class="logo">
-                <span class="shield-icon">🛡️</span>
-                <h1>Phishing Shield</h1>
-            </div>
-            <div class="api-status" id="api-status" title="API Status">
-                <span class="api-dot"></span>
-            </div>
-        </header>
-        
-        <main class="main-content">
-            <!-- Current Site Status -->
-            <section id="site-status" class="status-card">
-                <div class="status-header">
-                    <span class="status-icon" id="status-icon">🔄</span>
-                    <div class="status-info">
-                        <span class="status-text" id="status-text">Analyzing...</span>
-                        <span class="threat-level" id="threat-level"></span>
-                    </div>
-                </div>
-                <div class="status-details">
-                    <div class="url-display" id="current-url">Loading...</div>
-                    <div class="risk-score">
-                        <span>Risk Score:</span>
-                        <div class="score-bar">
-                            <div class="score-fill" id="score-fill"></div>
-                        </div>
-                        <span id="score-value">0%</span>
-                    </div>
-                </div>
-                <div class="analysis-type" id="analysis-type"></div>
-            </section>
-            
-            <!-- Indicators Section -->
-            <section id="indicators-section" class="indicators-card hidden">
-                <h3>
-                    <span>⚠️</span> Detected Indicators
-                    <span class="indicator-count" id="indicator-count">0</span>
-                </h3>
-                <ul id="indicators-list"></ul>
-            </section>
-            
-            <!-- AI Analysis Section -->
-            <section id="ai-section" class="ai-card hidden">
-                <h3><span>🤖</span> AI Analysis</h3>
-                <p id="ai-analysis"></p>
-            </section>
-            
-            <!-- Quick Actions -->
-            <section class="actions-card">
-                <button id="scan-btn" class="action-btn primary">
-                    <span>🔍</span> Scan Now
-                </button>
-                <button id="whitelist-btn" class="action-btn secondary">
-                    <span>✓</span> Trust
-                </button>
-                <button id="report-btn" class="action-btn danger">
-                    <span>⚠️</span> Report
-                </button>
-            </section>
-            
-            <!-- Stats Section -->
-            <section class="stats-card">
-                <div class="stat">
-                    <span class="stat-value" id="total-scans">0</span>
-                    <span class="stat-label">Today</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-value danger" id="threats-blocked">0</span>
-                    <span class="stat-label">Threats</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-value" id="whitelist-count">0</span>
-                    <span class="stat-label">Trusted</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-value" id="cache-count">0</span>
-                    <span class="stat-label">Cached</span>
-                </div>
-            </section>
-            
-            <!-- Toggle Section -->
-            <section class="toggle-card">
-                <div class="toggle-item">
-                    <div class="toggle-info">
-                        <span>🔒</span>
-                        <span>Real-time Protection</span>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="protection-toggle" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="toggle-item">
-                    <div class="toggle-info">
-                        <span>🔔</span>
-                        <span>Notifications</span>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="notifications-toggle" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </section>
-        </main>
-        
-        <footer class="footer">
-            <a href="#" id="history-link">📜 History</a>
-            <a href="#" id="settings-link">⚙️ Settings</a>
-            <span class="version">v1.0.0</span>
-        </footer>
+<div id="popup">
+  <!-- Header -->
+  <header>
+    <div class="logo"><span>🛡️</span><h1>Obsidian Guard</h1></div>
+    <div id="api-dot" class="dot offline" title="API offline"></div>
+  </header>
+
+  <!-- Status Card -->
+  <section id="status-card" class="card">
+    <div class="status-row">
+      <span id="status-icon" class="big-icon">⏳</span>
+      <div>
+        <div id="status-text" class="status-text">Scanning…</div>
+        <div id="threat-badge" class="badge safe"></div>
+      </div>
     </div>
-    <script src="popup.js"></script>
+    <div class="url" id="current-url">—</div>
+    <div class="score-row">
+      <span class="label">Risk</span>
+      <div class="bar"><div class="fill" id="score-fill"></div></div>
+      <span id="score-val" class="val">0%</span>
+    </div>
+    <div id="analysis-type" class="analysis-type"></div>
+  </section>
+
+  <!-- Indicators -->
+  <section id="ind-section" class="card hidden">
+    <h3>⚠️ Indicators <span id="ind-count" class="count">0</span></h3>
+    <ul id="ind-list"></ul>
+  </section>
+
+  <!-- AI Analysis -->
+  <section id="ai-section" class="card hidden">
+    <h3>🤖 AI Analysis</h3>
+    <p id="ai-text"></p>
+  </section>
+
+  <!-- Actions -->
+  <section class="actions">
+    <button id="btn-scan" class="btn primary">🔍 Scan</button>
+    <button id="btn-trust" class="btn secondary">✓ Trust</button>
+  </section>
+
+  <!-- Stats -->
+  <section class="stats">
+    <div class="stat"><span id="s-today" class="num">0</span><span class="lbl">Today</span></div>
+    <div class="stat"><span id="s-threats" class="num danger">0</span><span class="lbl">Threats</span></div>
+    <div class="stat"><span id="s-trusted" class="num">0</span><span class="lbl">Trusted</span></div>
+    <div class="stat"><span id="s-cache" class="num">0</span><span class="lbl">Cached</span></div>
+  </section>
+
+  <!-- Toggles -->
+  <section class="toggles">
+    <label class="toggle-row"><span>🔒 Protection</span><input type="checkbox" id="tog-protect" checked><span class="sw"></span></label>
+    <label class="toggle-row"><span>🔔 Notifications</span><input type="checkbox" id="tog-notify" checked><span class="sw"></span></label>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <a id="link-settings">⚙️ Settings</a>
+    <span class="ver">v2.0</span>
+  </footer>
+</div>
+<script src="popup.js"></script>
 </body>
 </html>

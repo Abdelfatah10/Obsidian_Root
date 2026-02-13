@@ -1,341 +1,179 @@
-// Phishing Shield - Popup Script
+// Obsidian Guard – Popup Script
+document.addEventListener('DOMContentLoaded', async () => {
+  const $ = id => document.getElementById(id);
 
-document.addEventListener('DOMContentLoaded', async function() {
-    // Elements
-    const statusIcon = document.getElementById('status-icon');
-    const statusText = document.getElementById('status-text');
-    const threatLevel = document.getElementById('threat-level');
-    const currentUrl = document.getElementById('current-url');
-    const scoreFill = document.getElementById('score-fill');
-    const scoreValue = document.getElementById('score-value');
-    const analysisType = document.getElementById('analysis-type');
-    const indicatorsSection = document.getElementById('indicators-section');
-    const indicatorsList = document.getElementById('indicators-list');
-    const indicatorCount = document.getElementById('indicator-count');
-    const aiSection = document.getElementById('ai-section');
-    const aiAnalysis = document.getElementById('ai-analysis');
-    const scanBtn = document.getElementById('scan-btn');
-    const whitelistBtn = document.getElementById('whitelist-btn');
-    const reportBtn = document.getElementById('report-btn');
-    const totalScans = document.getElementById('total-scans');
-    const threatsBlocked = document.getElementById('threats-blocked');
-    const whitelistCount = document.getElementById('whitelist-count');
-    const cacheCount = document.getElementById('cache-count');
-    const protectionToggle = document.getElementById('protection-toggle');
-    const notificationsToggle = document.getElementById('notifications-toggle');
-    const historyLink = document.getElementById('history-link');
-    const settingsLink = document.getElementById('settings-link');
-    const apiStatus = document.getElementById('api-status');
-    
-    // Initialize
-    await loadSettings();
-    await checkApiStatus();
-    await checkCurrentTab();
-    await loadStats();
-    
-    // Event Listeners
-    scanBtn.addEventListener('click', scanCurrentPage);
-    whitelistBtn.addEventListener('click', addCurrentToWhitelist);
-    reportBtn.addEventListener('click', reportSite);
-    protectionToggle.addEventListener('change', toggleProtection);
-    notificationsToggle.addEventListener('change', toggleNotifications);
-    historyLink.addEventListener('click', openHistory);
-    settingsLink.addEventListener('click', openSettings);
-    
-    // Check API status
-    async function checkApiStatus() {
-        try {
-            const response = await sendMessage({ action: 'testApiConnection' });
-            if (response && response.connected) {
-                apiStatus.classList.add('connected');
-                apiStatus.title = 'API Connected';
-            } else {
-                apiStatus.classList.add('disconnected');
-                apiStatus.title = 'API Offline - Using local analysis';
-            }
-        } catch (error) {
-            apiStatus.classList.add('disconnected');
-            apiStatus.title = 'API Offline - Using local analysis';
-        }
+  const els = {
+    apiDot:       $('api-dot'),
+    statusIcon:   $('status-icon'),
+    statusText:   $('status-text'),
+    threatBadge:  $('threat-badge'),
+    currentUrl:   $('current-url'),
+    scoreFill:    $('score-fill'),
+    scoreVal:     $('score-val'),
+    analysisType: $('analysis-type'),
+    indSection:   $('ind-section'),
+    indCount:     $('ind-count'),
+    indList:      $('ind-list'),
+    aiSection:    $('ai-section'),
+    aiText:       $('ai-text'),
+    btnScan:      $('btn-scan'),
+    btnTrust:     $('btn-trust'),
+    sToday:       $('s-today'),
+    sThreats:     $('s-threats'),
+    sTrusted:     $('s-trusted'),
+    sCache:       $('s-cache'),
+    togProtect:   $('tog-protect'),
+    togNotify:    $('tog-notify'),
+    linkSettings: $('link-settings'),
+  };
+
+  await init();
+
+  /* ── init ── */
+  async function init() {
+    loadSettings();
+    checkApi();
+    checkTab();
+    loadStats();
+    els.btnScan.addEventListener('click', rescan);
+    els.btnTrust.addEventListener('click', trust);
+    els.togProtect.addEventListener('change', () => chrome.storage.sync.set({ enableRealTimeProtection: els.togProtect.checked }));
+    els.togNotify.addEventListener('change',  () => chrome.storage.sync.set({ enableNotifications: els.togNotify.checked }));
+    els.linkSettings.addEventListener('click', e => { e.preventDefault(); chrome.runtime.openOptionsPage(); });
+  }
+
+  async function loadSettings() {
+    const s = await chrome.storage.sync.get(['enableRealTimeProtection', 'enableNotifications']);
+    els.togProtect.checked = s.enableRealTimeProtection !== false;
+    els.togNotify.checked  = s.enableNotifications !== false;
+  }
+
+  async function checkApi() {
+    try {
+      const r = await msg({ action: 'testConnection' });
+      els.apiDot.classList.toggle('online',  r?.connected);
+      els.apiDot.classList.toggle('offline', !r?.connected);
+      els.apiDot.title = r?.connected ? 'API connected' : 'API offline – local analysis only';
+    } catch {
+      els.apiDot.classList.add('offline');
     }
-    
-    // Load settings
-    async function loadSettings() {
-        const settings = await chrome.storage.sync.get([
-            'enableRealTimeProtection',
-            'enableNotifications'
-        ]);
-        
-        protectionToggle.checked = settings.enableRealTimeProtection !== false;
-        notificationsToggle.checked = settings.enableNotifications !== false;
+  }
+
+  async function checkTab() {
+    try { updateUI(await msg({ action: 'checkCurrentTab' })); }
+    catch { els.statusText.textContent = 'Unable to analyze'; }
+  }
+
+  async function loadStats() {
+    try {
+      const s = await msg({ action: 'getStatus' });
+      if (!s) return;
+      els.sToday.textContent   = s.todayScans   || 0;
+      els.sThreats.textContent = s.todayThreats  || 0;
+      els.sTrusted.textContent = s.whitelistCount || 0;
+      els.sCache.textContent   = s.cacheSize     || 0;
+    } catch {}
+  }
+
+  /* ── actions ── */
+  async function rescan() {
+    els.btnScan.disabled = true;
+    els.btnScan.textContent = '⏳ Scanning…';
+    try {
+      updateUI(await msg({ action: 'forceRescan' }));
+      await loadStats();
+    } catch {}
+    els.btnScan.disabled = false;
+    els.btnScan.textContent = '🔍 Scan';
+  }
+
+  async function trust() {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.url) return;
+    try {
+      const r = await msg({ action: 'addToWhitelist', url: tab.url });
+      if (r?.success) { await checkTab(); await loadStats(); }
+    } catch {}
+  }
+
+  /* ── ui update ── */
+  function updateUI(r) {
+    const card = $('status-card');
+    card.className = 'card';
+
+    if (!r || r.error || r.isProtected) {
+      els.statusIcon.textContent  = '🔒';
+      els.statusText.textContent  = 'Protected page';
+      els.threatBadge.textContent = '';
+      els.currentUrl.textContent  = 'Chrome internal page';
+      card.classList.add('protected');
+      els.scoreFill.style.width   = '0%';
+      els.scoreVal.textContent    = '0%';
+      els.indSection.classList.add('hidden');
+      els.aiSection.classList.add('hidden');
+      els.analysisType.textContent = '';
+      return;
     }
-    
-    // Check current tab
-    async function checkCurrentTab() {
-        try {
-            const response = await sendMessage({ action: 'checkCurrentTab' });
-            updateUI(response);
-        } catch (error) {
-            console.error('Error checking tab:', error);
-            statusIcon.textContent = '❓';
-            statusText.textContent = 'Unable to analyze';
-        }
+
+    // hostname
+    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+      try { els.currentUrl.textContent = new URL(tabs[0].url).hostname; } catch {}
+    });
+
+    const score = r.score || 0;
+
+    if (r.whitelisted) {
+      els.statusIcon.textContent  = '⭐';
+      els.statusText.textContent  = 'Trusted Site';
+      els.threatBadge.textContent = 'WHITELISTED';
+      els.threatBadge.className   = 'badge trusted';
+      card.classList.add('trusted');
+    } else if (r.isPhishing || score >= 70) {
+      els.statusIcon.textContent  = '🚨';
+      els.statusText.textContent  = 'DANGER!';
+      els.threatBadge.textContent = 'HIGH RISK';
+      els.threatBadge.className   = 'badge danger';
+      card.classList.add('danger');
+    } else if (score >= 40) {
+      els.statusIcon.textContent  = '⚠️';
+      els.statusText.textContent  = 'Suspicious';
+      els.threatBadge.textContent = 'MEDIUM RISK';
+      els.threatBadge.className   = 'badge warning';
+      card.classList.add('warning');
+    } else {
+      els.statusIcon.textContent  = '✅';
+      els.statusText.textContent  = 'Verified Safe';
+      els.threatBadge.textContent = 'SAFE';
+      els.threatBadge.className   = 'badge safe';
+      card.classList.add('safe');
     }
-    
-    // Update UI with scan results
-    function updateUI(result) {
-        // Reset classes
-        const siteStatus = document.getElementById('site-status');
-        siteStatus.classList.remove('safe', 'warning', 'danger', 'protected', 'trusted');
-        
-        if (!result || result.error) {
-            statusIcon.textContent = '🔒';
-            statusText.textContent = 'Protected page';
-            threatLevel.textContent = '';
-            currentUrl.textContent = 'Chrome internal page';
-            siteStatus.classList.add('protected');
-            analysisType.textContent = '';
-            return;
-        }
-        
-        // Get and display current URL
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (tabs[0]) {
-                try {
-                    const url = new URL(tabs[0].url);
-                    currentUrl.textContent = url.hostname;
-                } catch (e) {
-                    currentUrl.textContent = 'Unknown';
-                }
-            }
-        });
-        
-        // Update status based on result
-        const score = result.score || 0;
-        
-        if (result.whitelisted) {
-            statusIcon.textContent = '⭐';
-            statusText.textContent = 'Trusted Site';
-            threatLevel.textContent = 'Whitelisted';
-            threatLevel.className = 'threat-level safe';
-            siteStatus.classList.add('trusted');
-        } else if (result.isPhishing || score >= 70) {
-            statusIcon.textContent = '🚨';
-            statusText.textContent = 'DANGER!';
-            threatLevel.textContent = 'High Risk';
-            threatLevel.className = 'threat-level danger';
-            siteStatus.classList.add('danger');
-        } else if (score >= 40) {
-            statusIcon.textContent = '⚠️';
-            statusText.textContent = 'Suspicious';
-            threatLevel.textContent = 'Medium Risk';
-            threatLevel.className = 'threat-level warning';
-            siteStatus.classList.add('warning');
-        } else if (score >= 20) {
-            statusIcon.textContent = '🤔';
-            statusText.textContent = 'Caution';
-            threatLevel.textContent = 'Low Risk';
-            threatLevel.className = 'threat-level caution';
-            siteStatus.classList.add('warning');
-        } else {
-            statusIcon.textContent = '✅';
-            statusText.textContent = 'Safe';
-            threatLevel.textContent = 'No Threats';
-            threatLevel.className = 'threat-level safe';
-            siteStatus.classList.add('safe');
-        }
-        
-        // Update score
-        scoreValue.textContent = `${score}%`;
-        scoreFill.style.width = `${Math.min(score, 100)}%`;
-        
-        if (score >= 70) {
-            scoreFill.className = 'score-fill danger';
-        } else if (score >= 40) {
-            scoreFill.className = 'score-fill warning';
-        } else if (score >= 20) {
-            scoreFill.className = 'score-fill caution';
-        } else {
-            scoreFill.className = 'score-fill safe';
-        }
-        
-        // Show analysis type
-        if (result.analysisType) {
-            analysisType.textContent = result.analysisType === 'api' ? '🌐 API Analysis' : '💻 Local Analysis';
-            analysisType.className = 'analysis-type ' + result.analysisType;
-        } else {
-            analysisType.textContent = '';
-        }
-        
-        // Show indicators if any
-        if (result.indicators && result.indicators.length > 0) {
-            indicatorsSection.classList.remove('hidden');
-            indicatorCount.textContent = result.indicators.length;
-            indicatorsList.innerHTML = result.indicators
-                .slice(0, 5) // Show max 5 indicators
-                .map(ind => `<li>${escapeHtml(ind)}</li>`)
-                .join('');
-            
-            if (result.indicators.length > 5) {
-                indicatorsList.innerHTML += `<li class="more">+${result.indicators.length - 5} more...</li>`;
-            }
-        } else {
-            indicatorsSection.classList.add('hidden');
-        }
-        
-        // Show AI analysis if available
-        if (result.aiAnalysis) {
-            aiSection.classList.remove('hidden');
-            aiAnalysis.textContent = result.aiAnalysis;
-        } else {
-            aiSection.classList.add('hidden');
-        }
-    }
-    
-    // Load statistics
-    async function loadStats() {
-        try {
-            const status = await sendMessage({ action: 'getStatus' });
-            
-            if (status) {
-                totalScans.textContent = status.todayScans || 0;
-                threatsBlocked.textContent = status.todayThreats || 0;
-                whitelistCount.textContent = status.whitelistCount || 0;
-                cacheCount.textContent = status.cacheSize || 0;
-            }
-        } catch (error) {
-            console.error('Error loading stats:', error);
-        }
-    }
-    
-    // Scan current page
-    async function scanCurrentPage() {
-        scanBtn.disabled = true;
-        scanBtn.innerHTML = '<span>🔄</span> Scanning...';
-        scanBtn.classList.add('scanning');
-        
-        // Show scanning state
-        statusIcon.textContent = '🔄';
-        statusText.textContent = 'Scanning...';
-        
-        try {
-            const response = await sendMessage({ action: 'checkCurrentTab' });
-            updateUI(response);
-            await loadStats();
-            showNotification('Scan complete!', 'success');
-        } catch (error) {
-            console.error('Scan error:', error);
-            showNotification('Scan failed', 'error');
-        } finally {
-            scanBtn.disabled = false;
-            scanBtn.innerHTML = '<span>🔍</span> Scan Now';
-            scanBtn.classList.remove('scanning');
-        }
-    }
-    
-    // Add current site to whitelist
-    async function addCurrentToWhitelist() {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        
-        if (tab && tab.url) {
-            whitelistBtn.disabled = true;
-            
-            try {
-                const response = await sendMessage({
-                    action: 'addToWhitelist',
-                    url: tab.url
-                });
-                
-                if (response && response.success) {
-                    showNotification(`${response.hostname} added to trusted list!`, 'success');
-                    await loadStats();
-                    await checkCurrentTab();
-                } else {
-                    showNotification('Failed to add site', 'error');
-                }
-            } catch (error) {
-                showNotification('Error: ' + error.message, 'error');
-            } finally {
-                whitelistBtn.disabled = false;
-            }
-        }
-    }
-    
-    // Report suspicious site
-    async function reportSite() {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        
-        if (tab && tab.url) {
-            const reportUrl = `https://safebrowsing.google.com/safebrowsing/report_phish/?url=${encodeURIComponent(tab.url)}`;
-            chrome.tabs.create({ url: reportUrl });
-        }
-    }
-    
-    // Toggle protection
-    async function toggleProtection() {
-        await chrome.storage.sync.set({
-            enableRealTimeProtection: protectionToggle.checked
-        });
-        showNotification(
-            protectionToggle.checked ? 'Protection enabled' : 'Protection disabled',
-            protectionToggle.checked ? 'success' : 'warning'
-        );
-    }
-    
-    // Toggle notifications
-    async function toggleNotifications() {
-        await chrome.storage.sync.set({
-            enableNotifications: notificationsToggle.checked
-        });
-        showNotification(
-            notificationsToggle.checked ? 'Notifications enabled' : 'Notifications disabled',
-            'info'
-        );
-    }
-    
-    // Open history
-    function openHistory(e) {
-        e.preventDefault();
-        chrome.tabs.create({ url: chrome.runtime.getURL('src/history/history.html') });
-    }
-    
-    // Open settings
-    function openSettings(e) {
-        e.preventDefault();
-        chrome.runtime.openOptionsPage();
-    }
-    
-    // Send message to background script
-    function sendMessage(message) {
-        return new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage(message, (response) => {
-                if (chrome.runtime.lastError) {
-                    reject(new Error(chrome.runtime.lastError.message));
-                } else {
-                    resolve(response);
-                }
-            });
-        });
-    }
-    
-    // Show notification in popup
-    function showNotification(message, type = 'info') {
-        const notification = document.createElement('div');
-        notification.className = `popup-notification ${type}`;
-        notification.textContent = message;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.classList.add('fade-out');
-            setTimeout(() => notification.remove(), 300);
-        }, 2000);
-    }
-    
-    // Escape HTML
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
+
+    els.scoreVal.textContent  = score + '%';
+    els.scoreFill.style.width = Math.min(score, 100) + '%';
+    els.scoreFill.className   = 'fill ' + (score >= 70 ? 'danger' : score >= 40 ? 'warning' : 'safe');
+
+    if (r.analysisType) {
+      els.analysisType.textContent = r.analysisType === 'ai' ? '🌐 AI Analysis' : '💻 Local Analysis';
+    } else { els.analysisType.textContent = ''; }
+
+    // indicators
+    if (r.indicators?.length) {
+      els.indSection.classList.remove('hidden');
+      els.indCount.textContent = r.indicators.length;
+      els.indList.innerHTML = r.indicators.slice(0, 5).map(i => `<li>${esc(i)}</li>`).join('');
+      if (r.indicators.length > 5) els.indList.innerHTML += `<li class="more">+${r.indicators.length - 5} more</li>`;
+    } else { els.indSection.classList.add('hidden'); }
+
+    // ai
+    if (r.aiAnalysis) {
+      els.aiSection.classList.remove('hidden');
+      els.aiText.textContent = r.aiAnalysis;
+    } else { els.aiSection.classList.add('hidden'); }
+  }
+
+  /* ── helpers ── */
+  function msg(m) {
+    return new Promise((res, rej) => chrome.runtime.sendMessage(m, r => chrome.runtime.lastError ? rej(chrome.runtime.lastError) : res(r)));
+  }
+  function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 });
